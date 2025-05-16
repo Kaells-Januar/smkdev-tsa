@@ -10,7 +10,25 @@ function solveApartment($A, $B, $N, $M, $K) {
      * @return int - Maximum number of apartments that can be allocated to applicants.
      */
 
-    // YOUR CODE HERE
+   sort($A);
+sort($B);
+
+$i = 0;
+$j = 0;
+$matches = 0;
+
+while ($i < $N && $j < $M) {
+    if (abs($A[$i] - $B[$j]) <= $K) {
+        $matches++;
+        $i++;
+        $j++;
+    } elseif ($B[$j] < $A[$i] - $K) {
+        $j++;
+    } else {
+        $i++;
+    }
+}
+
 
     return $matches;
 }

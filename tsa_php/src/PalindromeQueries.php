@@ -7,69 +7,81 @@ class HashSegmentTree {
     private $n;
     private $tree;
 
-    /**
-     * Initializes a segment tree for storing hash values.
-     * @param int $n The size of the input string.
-     */
     public function __construct($n) {
         $this->n = $n;
         $this->tree = array_fill(0, 2 * $n, 0);
     }
 
-    /**
-     * Updates the segment tree at a specific index with a new value.
-     * @param int $index The index in the original array (0-based).
-     * @param int $value The value to update at the specified index.
-     */
     public function update($index, $value) {
-        // YOUR CODE HERE
+        $index += $this->n;
+        $this->tree[$index] = $value;
+        while ($index > 1) {
+            $index >>= 1;
+            $this->tree[$index] = ($this->tree[$index * 2] + $this->tree[$index * 2 + 1]) % MOD;
+        }
     }
 
-    /**
-     * Queries the segment tree for the sum of values in a given range.
-     * @param int $l The starting index of the range (0-based).
-     * @param int $r The ending index of the range (0-based).
-     * @return int The sum of values in the range [l, r].
-     */
     public function query($l, $r) {
-        // YOUR CODE HERE
+        $result = 0;
+        $l += $this->n;
+        $r += $this->n + 1;
+        while ($l < $r) {
+            if ($l % 2 == 1) $result = ($result + $this->tree[$l++]) % MOD;
+            if ($r % 2 == 1) $result = ($result + $this->tree[--$r]) % MOD;
+            $l >>= 1;
+            $r >>= 1;
+        }
         return $result;
     }
 }
 
-/**
- * Initializes hash powers for a given string length.
- * @param int $length The length of the input string.
- * @return array An array where hashPower[i] = HASH^i % MOD.
- */
 function initializeHashPowers($length) {
-    // YOUR CODE HERE
+    $hashPower = array_fill(0, $length, 1);
+    for ($i = 1; $i < $length; $i++) {
+        $hashPower[$i] = ($hashPower[$i - 1] * HASH) % MOD;
+    }
     return $hashPower;
 }
 
-/**
- * Initializes the forward and backward hash segment trees for a given string.
- * @param int $n The length of the input string.
- * @param string $s The input string.
- * @param array $hashPower Precomputed hash powers for the string.
- * @return array An associative array containing the forward and backward hash segment trees.
- */
-function initializeHashTables($n, $s, $hashPower) {
-    // YOUR CODE HERE
+function initializeHashTables($n, $s, $hashPower) { 
+    $fwdHash = new HashSegmentTree($n);
+    $bckHash = new HashSegmentTree($n);
+
+    for ($i = 0; $i < $n; $i++) {
+        $charCode = ord($s[$i]);
+        $fwdHash->update($i, ($charCode * $hashPower[$i]) % MOD);
+        $bckHash->update($n - 1 - $i, ($charCode * $hashPower[$i]) % MOD);
+    }
+
     return ['fwdHash' => $fwdHash, 'bckHash' => $bckHash];
 }
 
-/**
- * Processes a list of operations on the input string and returns the results.
- * @param int $n The length of the input string.
- * @param array $operations A list of operations to perform.
- * @param string $s The input string.
- * @return array An array of results for palindrome queries ("YES" or "NO").
- */
 function processOperations($n, $operations, $s) {
-    // YOUR CODE HERE
+    $hashPower = initializeHashPowers($n);
+    $hashTables = initializeHashTables($n, $s, $hashPower);
+    $fwdHash = $hashTables['fwdHash'];
+    $bckHash = $hashTables['bckHash'];
+    $s = str_split($s);
+    $results = [];
+
+    foreach ($operations as $op) {
+        if ($op[0] === "1") {
+            $index = intval($op[1]);
+            $char = $op[2];
+            $s[$index] = $char;
+            $charCode = ord($char);
+            $fwdHash->update($index, ($charCode * $hashPower[$index]) % MOD);
+            $bckHash->update($n - 1 - $index, ($charCode * $hashPower[$index]) % MOD);
+        } elseif ($op[0] === "2") {
+            $l = intval($op[1]);
+            $r = intval($op[2]);
+            $fwd = $fwdHash->query($l, $r);
+            $bck = $bckHash->query($n - 1 - $r, $n - 1 - $l);
+            $results[] = ($fwd == $bck) ? "YES" : "NO";
+        }
+    }
+
     return $results;
 }
-
 
 ?>
